@@ -4,7 +4,7 @@
 
 class d4grid {
 
-private:
+protected:
     double* pGridobj;
 
     int ndim1;
@@ -22,10 +22,27 @@ private:
 public:
     d4grid() = default;
     ~d4grid();
-    double& getElement(int i, int j, int k, int l);
-    static d4grid buildIt(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum);
+    virtual double& getElement(int i, int j, int k, int l);
+    static d4grid* buildIt(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum);
+    static d4grid* buildRadial(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum, int nSizeX2, int nSizeY2, int nSizeZ2);
 
 };
 
+class d4gridRadial : public d4grid
+{
+private:
+    
+    d4grid *ghostGrid;
+
+
+public:
+    d4gridRadial() : d4grid() {};
+    ~d4gridRadial();
+    void buildGhost(int nSizeX2, int nSizeY2, int nSizeZ2);
+    double& getElement(int i, int j, int k, int l);
+    
+
+
+};
 
 #endif
