@@ -542,28 +542,33 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
   }
   
   //allocate memory for local grids
+  /* I've started to refactor this code to simplify memory allocation, and fit into d4Grid class */
+  int nVarNumForD4grid = grid.nNumVars+grid.nNumIntVars;
+
   if(procTop.nRank==0){// 1D region doesn't need ghost cells in theta and phi directions
-    grid.dLocalGridOld=new double***[grid.nNumVars+grid.nNumIntVars];
-    grid.dLocalGridNew=new double***[grid.nNumVars+grid.nNumIntVars];
-    for(int n=0;n<grid.nNumVars+grid.nNumIntVars;n++){
+    grid.dLocalGridOld=new double***[nVarNumForD4grid];
+    grid.dLocalGridNew=new double***[nVarNumForD4grid];
+    for(int n=0;n<nVarNumForD4grid;n++){
       
       //allocate radial grid memory for old and new grid
       int nGhostCellsX=1;
       if(grid.nVariables[n][0]==-1){
         nGhostCellsX=0;
       }
-      grid.dLocalGridOld[n]=new double**[grid.nLocalGridDims[procTop.nRank][n][0]
-        +2*nGhostCellsX*grid.nNumGhostCells];
-      grid.dLocalGridNew[n]=new double**[grid.nLocalGridDims[procTop.nRank][n][0]
-        +2*nGhostCellsX*grid.nNumGhostCells];
+      int nRadialElementNumForD4Grid = grid.nLocalGridDims[procTop.nRank][n][0]+2*nGhostCellsX*grid.nNumGhostCells;
+      int nThetaNumForD4Grid = grid.nLocalGridDims[procTop.nRank][n][1];
+      int nPhiNumForD4Grid   = grid.nLocalGridDims[procTop.nRank][n][2];
+
+      grid.dLocalGridOld[n]=new double**[nRadialElementNumForD4Grid];
+      grid.dLocalGridNew[n]=new double**[nRadialElementNumForD4Grid];
       
       //do inner part of old and new grid
-      for(int i=0;i<grid.nLocalGridDims[procTop.nRank][n][0]+nGhostCellsX*grid.nNumGhostCells;i++){
-        grid.dLocalGridOld[n][i]=new double*[grid.nLocalGridDims[procTop.nRank][n][1]];
-        grid.dLocalGridNew[n][i]=new double*[grid.nLocalGridDims[procTop.nRank][n][1]];
-        for(int j=0;j<grid.nLocalGridDims[procTop.nRank][n][1];j++){
-          grid.dLocalGridOld[n][i][j]=new double[grid.nLocalGridDims[procTop.nRank][n][2]];
-          grid.dLocalGridNew[n][i][j]=new double[grid.nLocalGridDims[procTop.nRank][n][2]];
+      for(int i=0;i<nRadialElementNumForD4Grid-nGhostCellsX*grid.nNumGhostCells;i++){
+        grid.dLocalGridOld[n][i]=new double*[nThetaNumForD4Grid];
+        grid.dLocalGridNew[n][i]=new double*[nThetaNumForD4Grid];
+        for(int j=0;j<nThetaNumForD4Grid;j++){
+          grid.dLocalGridOld[n][i][j]=new double[nPhiNumForD4Grid];
+          grid.dLocalGridNew[n][i][j]=new double[nPhiNumForD4Grid];
         }
       }
       
@@ -601,12 +606,13 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
     }
   }
   else{// 3D region
-    grid.dLocalGridOld=new double***[grid.nNumVars+grid.nNumIntVars];
-    grid.dLocalGridNew=new double***[grid.nNumVars+grid.nNumIntVars];
-    for(int n=0;n<grid.nNumVars+grid.nNumIntVars;n++){
-      int nSizeX=1;
-      int nSizeY=1;
-      int nSizeZ=1;
+    grid.dLocalGridOld=new double***[nVarNumForD4grid];
+    grid.dLocalGridNew=new double***[nVarNumForD4grid];
+    for(int n=0;n<nVarNumForD4grid;n++){
+      int nSizeX=1; //NumRadialElement in d4Grid
+      int nSizeY=1; //NumTheta in d4Grid
+      int nSizeZ=1; //NumPhi in D4Grid
+
       if(grid.nVariables[n][0]!=-1){
         nSizeX=grid.nLocalGridDims[procTop.nRank][n][0]+2*grid.nNumGhostCells;
       }
