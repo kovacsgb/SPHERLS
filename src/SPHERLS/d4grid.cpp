@@ -26,3 +26,7 @@ d4grid d4grid::buildIt(int nVarNum, int nRadialElementNum, int nThetaNum, int nP
 
     return d4NewGrid;
 }
+d4grid::~d4grid()
+{
+    delete this->pGridobj;
+}

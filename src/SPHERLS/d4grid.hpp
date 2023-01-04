@@ -1,3 +1,6 @@
+#ifndef D4GRID
+#define D4GRID
+
 
 class d4grid {
 
@@ -17,7 +20,12 @@ private:
     inline int calcindex(int i, int j, int k, int l);
 
 public:
+    d4grid() = default;
+    ~d4grid();
     double& getElement(int i, int j, int k, int l);
     static d4grid buildIt(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum);
 
 };
+
+
+#endif
