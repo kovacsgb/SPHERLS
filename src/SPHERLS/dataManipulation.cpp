@@ -545,10 +545,29 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
   /* I've started to refactor this code to simplify memory allocation, and fit into d4Grid class */
   int nVarNumForD4grid = grid.nNumVars+grid.nNumIntVars;
 
+
+
   if(procTop.nRank==0){// 1D region doesn't need ghost cells in theta and phi directions
-    grid.dLocalGridOld=new double***[nVarNumForD4grid];
-    grid.dLocalGridNew=new double***[nVarNumForD4grid];
-    for(int n=0;n<nVarNumForD4grid;n++){
+    //grid.dLocalGridOld=new double***[nVarNumForD4grid];
+    //grid.dLocalGridNew=new double***[nVarNumForD4grid];
+    int nRadialElementNumForD4Grid = grid.nNum1DZones + 1 + grid.nNumGhostCells; //+1 because of the interface(?)
+    int nThetaNumForD4Grid= 2; //one element and one interface
+    int nPhiNumForD4Grid = 2; //one element and one interface
+    //Parameters of the adjadent grid container:
+    int nGhostDim1 = grid.nNumGhostCells;
+    int nGhostDim2 = grid.nGlobalGridDims[1]+1;
+    int nGhostDim3 = grid.nGlobalGridDims[2]+1;
+
+    grid.dLocalGridOld = d4grid::buildRadial(nVarNumForD4grid,nRadialElementNumForD4Grid,
+      nThetaNumForD4Grid,nPhiNumForD4Grid,nGhostDim1,nGhostDim2,nGhostDim3);
+    grid.dLocalGridNew = d4grid::buildRadial(nVarNumForD4grid,nRadialElementNumForD4Grid,
+      nThetaNumForD4Grid,nPhiNumForD4Grid,nGhostDim1,nGhostDim2,nGhostDim3);
+    /* 
+    This method creates a lot of empty space which is still bad, a next improvement would be to generate separate grids for each variable, using them in a vector,
+     but hopefully grid interface could be at least comform LS principle.
+    */
+
+    /*for(int n=0;n<nVarNumForD4grid;n++){
       
       //allocate radial grid memory for old and new grid
       int nGhostCellsX=1;
@@ -603,10 +622,27 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
           grid.dLocalGridNew[n][i][j]=new double[nSizeZ];
         }
       }
-    }
+    }*/
   }
   else{// 3D region
-    grid.dLocalGridOld=new double***[nVarNumForD4grid];
+    /* This part is easier, much less empty spaces. */
+    auto getmax=[grid,procTop,nVarNumForD4grid](int l){
+      int nMaxDim=1;
+      for( int n= 0; n< nVarNumForD4grid;n++)
+      {
+        if (nMaxDim<grid.nLocalGridDims[procTop.nRank][n][l]) nMaxDim = grid.nLocalGridDims[procTop.nRank][n][l];
+      }
+      return nMaxDim;
+    };
+    int nSizeX=getmax(0)+2*grid.nNumGhostCells;
+    int nSizeY = getmax(1) + 2*grid.nNumGhostCells;
+    int nSizeZ = getmax(2) + 2*grid.nNumGhostCells;
+
+    grid.dLocalGridOld = d4grid::buildIt(nVarNumForD4grid,nSizeX,nSizeY,nSizeZ);
+    grid.dLocalGridNew = d4grid::buildIt(nVarNumForD4grid,nSizeX,nSizeY,nSizeZ);
+
+
+    /*grid.dLocalGridOld=new double***[nVarNumForD4grid];
     grid.dLocalGridNew=new double***[nVarNumForD4grid];
     for(int n=0;n<nVarNumForD4grid;n++){
       int nSizeX=1; //NumRadialElement in d4Grid
@@ -642,7 +678,7 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
           grid.dLocalGridNew[n][i][j]=new double[nSizeZ];
         }
       }
-    }
+    }*/
   }
   
   //set offset for interface centered quantities
@@ -897,7 +933,7 @@ void modelWrite_GL(std::string sFileName,ProcTop &procTop, Grid &grid, Time &tim
           //have to write out the multidimensional array one row at a time since
           // there is no garantee that from one row to another the memory is
           // contiguous
-          ofOut.write((char*)(grid.dLocalGridOld[n][i][j])
+          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
             ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
         }
       }
@@ -918,7 +954,7 @@ void modelWrite_GL(std::string sFileName,ProcTop &procTop, Grid &grid, Time &tim
         for(int j=0;j<nSizeY;j++){
           //have to write out the multidimensional array one row at a time since there is no 
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld[n][i][j]),nSizeZ*sizeof(double));
+          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j)),nSizeZ*sizeof(double));
         }
       }
     }
@@ -966,7 +1002,7 @@ void modelWrite_GL(std::string sFileName,ProcTop &procTop, Grid &grid, Time &tim
           +nGhostCellsY*2*grid.nNumGhostCells;j++){
           //have to write out the multidimensional array one row at a time since there is no
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld[n][i][j])
+          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
             ,(grid.nLocalGridDims[procTop.nRank][n][2]
             +nGhostCellsZ*2*grid.nNumGhostCells)*sizeof(double));
         }
@@ -1078,7 +1114,7 @@ void modelWrite_TEOS(std::string sFileName,ProcTop &procTop, Grid &grid, Time &t
           //have to write out the multidimensional array one row at a time since
           // there is no garantee that from one row to another the memory is
           // contiguous
-          ofOut.write((char*)(grid.dLocalGridOld[n][i][j])
+          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
             ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
         }
       }
@@ -1099,7 +1135,7 @@ void modelWrite_TEOS(std::string sFileName,ProcTop &procTop, Grid &grid, Time &t
         for(int j=0;j<nSizeY;j++){
           //have to write out the multidimensional array one row at a time since there is no 
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld[n][i][j]),nSizeZ*sizeof(double));
+          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j)),nSizeZ*sizeof(double));
         }
       }
     }
@@ -1147,7 +1183,7 @@ void modelWrite_TEOS(std::string sFileName,ProcTop &procTop, Grid &grid, Time &t
           +nGhostCellsY*2*grid.nNumGhostCells;j++){
           //have to write out the multidimensional array one row at a time since there is no
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld[n][i][j])
+          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
             ,(grid.nLocalGridDims[procTop.nRank][n][2]
             +nGhostCellsZ*2*grid.nNumGhostCells)*sizeof(double));
         }
@@ -1632,7 +1668,7 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
         //read in inner 1D region
         for(int i=0;i<grid.nLocalGridDims[procTop.nRank][n][0]+grid.nNumGhostCells;i++){
           for(int j=0;j<grid.nLocalGridDims[procTop.nRank][n][1];j++){
-            ifIn.read((char*)(grid.dLocalGridOld[n][i][j])
+            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
               ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
           }
         }
@@ -1666,7 +1702,7 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
             //skip inner z-ghost cells
             ifIn.seekg(nSkipSize[2]*sizeof(double),std::ios_base::cur);
             
-            ifIn.read((char*)(grid.dLocalGridOld[n][i][j]),(nGlobalSize[2])*sizeof(double));
+            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j)),(nGlobalSize[2])*sizeof(double));
             //may need to copy these around if the variable is not defined in y and or z directions
             //grid will be the size of the y and z processor dimensions
             
@@ -1828,7 +1864,7 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
             +nGhostCellsY*2*grid.nNumGhostCells;j++){
             for(int k=0;k<grid.nLocalGridDims[procTop.nRank][n][2]
               +nGhostCellsZ*2*grid.nNumGhostCells;k++){
-              grid.dLocalGridOld[n][i][j][k]=dTemp;
+              grid.dLocalGridOld->getElement(n,i,j,k)=dTemp;
             }
           }
         }
@@ -1842,7 +1878,7 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
           +nGhostCellsX*2*grid.nNumGhostCells;i++){
           for(int j=0;j<grid.nLocalGridDims[procTop.nRank][n][1]
             +nGhostCellsY*2*grid.nNumGhostCells;j++){
-            ifIn.read((char*)(grid.dLocalGridOld[n][i][j])
+            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
               ,(grid.nLocalGridDims[procTop.nRank][n][2]+nGhostCellsZ*2*grid.nNumGhostCells)
               *sizeof(double));
             
@@ -1863,7 +1899,7 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
           +nGhostCellsX*2*grid.nNumGhostCells;i++){
           for(int j=0;j<grid.nLocalGridDims[procTop.nRank][n][1]
             +nGhostCellsY*2*grid.nNumGhostCells;j++){
-            ifIn.read((char*)(grid.dLocalGridOld[n][i][j])
+            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
               ,(grid.nLocalGridDims[procTop.nRank][n][2]+nGhostCellsZ*2*grid.nNumGhostCells)
               *sizeof(double));
               
@@ -2068,7 +2104,7 @@ void initUpdateLocalBoundaries(ProcTop &procTop, Grid &grid, MessPass &messPass,
           for(int j=nSendBlockStart[n][1];j<nSendBlockStart[n][1]+nSendBlockDims[n][1];j++){
             for(int k=nSendBlockStart[n][2];k<nSendBlockStart[n][2]+nSendBlockDims[n][2];k++){
               MPI::Aint nCurAddress=MPI::Get_address(
-                &grid.dLocalGridNew[n][i][nSendBlockStart[n][1]][nSendBlockStart[n][2]]);
+                &grid.dLocalGridNew->getElement(n,i,nSendBlockStart[n][1],nSendBlockStart[n][2]));//[n][i][nSendBlockStart[n][1]][nSendBlockStart[n][2]]);
               nSendAddresses[nCount]=nCurAddress-nStartAddressSend;
               nCount++;
               vecSendNewVarAddresses[n].push_back(nCurAddress-nStartAddressSend);
@@ -2116,8 +2152,8 @@ void initUpdateLocalBoundaries(ProcTop &procTop, Grid &grid, MessPass &messPass,
         for(int i=nRecvBlockStart[n][0];i<nRecvBlockStart[n][0]+nRecvBlockDims[n][0];i++){
           for(int j=nRecvBlockStart[n][1];j<nRecvBlockStart[n][1]+nRecvBlockDims[n][1];j++){
             for(int k=nRecvBlockStart[n][2];k<nRecvBlockStart[n][2]+nRecvBlockDims[n][2];k++){
-              MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridOld[n][i][j][k]);
-              MPI::Aint nCurAddress2=MPI::Get_address(&grid.dLocalGridNew[n][i][j][k]);
+              MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridOld->getElement(n,i,j,k));
+              MPI::Aint nCurAddress2=MPI::Get_address(&grid.dLocalGridNew->getElement(n,i,j,k));
               nRecvAddresses[nCount]=nCurAddress-nStartAddressRecv;
               nCount++;
               vecRecvNewVarAddresses[n].push_back(nCurAddress2-nStartAddressRecv2);
@@ -2829,7 +2865,7 @@ void initUpdateLocalBoundaries(ProcTop &procTop, Grid &grid, MessPass &messPass,
                 ;j++){
                 for(int k=nSendBlockStart[p][l][2];k<nSendBlockStart[p][l][2]
                   +nSendBlockDims[p][l][2];k++){
-                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridNew[l][i][j][k]);
+                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridNew->getElement(l,i,j,k));
                   nSendAddresses[nCount]=nCurAddress-nStartAddressSend;
                   nCount++;
                   vecSendNewVarAddresses[l].push_back(nCurAddress-nStartAddressSend);
@@ -2886,8 +2922,8 @@ void initUpdateLocalBoundaries(ProcTop &procTop, Grid &grid, MessPass &messPass,
                 j++){
                 for(int k=nRecvBlockStart[p][l][2];k<nRecvBlockStart[p][l][2]
                   +nRecvBlockDims[p][l][2];k++){
-                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridOld[l][i][j][k]);
-                  MPI::Aint nCurAddress2=MPI::Get_address(&grid.dLocalGridNew[l][i][j][k]);
+                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridOld->getElement(l,i,j,k));
+                  MPI::Aint nCurAddress2=MPI::Get_address(&grid.dLocalGridNew->getElement(l,i,j,k));
                   nRecvAddresses[nCount]=nCurAddress-nStartAddressRecv;
                   nCount++;
                   vecRecvNewVarAddresses[l].push_back(nCurAddress2-nStartAddressRecv2);
@@ -3403,7 +3439,7 @@ void initUpdateLocalBoundaries(ProcTop &procTop, Grid &grid, MessPass &messPass,
                 ;j++){
                 for(int k=nSendBlockStart[p][l][2];k<nSendBlockStart[p][l][2]
                   +nSendBlockDims[p][l][2];k++){
-                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridNew[l][i][j][k]);
+                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridNew->getElement(l,i,j,k));
                   nSendAddresses[nCount]=nCurAddress-nStartAddressSend;
                   vecSendNewVarAddresses[l].push_back(nCurAddress-nStartAddressSend);
                   nCount++;
@@ -3430,8 +3466,8 @@ void initUpdateLocalBoundaries(ProcTop &procTop, Grid &grid, MessPass &messPass,
                 ;j++){
                 for(int k=nRecvBlockStart[p][l][2];k<nRecvBlockStart[p][l][2]
                   +nSendBlockDims[p][l][2];k++){
-                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridOld[l][i][j][k]);
-                  MPI::Aint nCurAddress2=MPI::Get_address(&grid.dLocalGridNew[l][i][j][k]);
+                  MPI::Aint nCurAddress=MPI::Get_address(&grid.dLocalGridOld->getElement(l,i,j,k));
+                  MPI::Aint nCurAddress2=MPI::Get_address(&grid.dLocalGridNew->getElement(l,i,j,k));
                   nRecvAddresses[nCount]=nCurAddress-nStartAddressRecv;
                   vecRecvNewVarAddresses[l].push_back(nCurAddress2-nStartAddressRecv2);
                   nCount++;
@@ -3865,7 +3901,7 @@ void updateOldGrid(ProcTop &procTop, Grid &grid){
     for(int i=grid.nStartUpdateExplicit[n][0];i<grid.nEndUpdateExplicit[n][0];i++){
       for(int j=grid.nStartUpdateExplicit[n][1];j<grid.nEndUpdateExplicit[n][1];j++){
         for(int k=grid.nStartUpdateExplicit[n][2];k<grid.nEndUpdateExplicit[n][2];k++){
-          grid.dLocalGridOld[n][i][j][k]=grid.dLocalGridNew[n][i][j][k];
+          grid.dLocalGridOld->getElement(n,i,j,k)=grid.dLocalGridNew->getElement(n,i,j,k);
         }
       }
     }
@@ -3876,7 +3912,7 @@ void updateOldGrid(ProcTop &procTop, Grid &grid){
           j++){
           for(int k=grid.nStartGhostUpdateExplicit[n][l][2];k<grid.nEndGhostUpdateExplicit[n][l][2];
             k++){
-            grid.dLocalGridOld[n][i][j][k]=grid.dLocalGridNew[n][i][j][k];
+            grid.dLocalGridOld->getElement(n,i,j,k)=grid.dLocalGridNew->getElement(n,i,j,k);
           }
         }
       }
@@ -3886,7 +3922,7 @@ void updateOldGrid(ProcTop &procTop, Grid &grid){
     for(int i=grid.nStartUpdateImplicit[n][0];i<grid.nEndUpdateImplicit[n][0];i++){
       for(int j=grid.nStartUpdateImplicit[n][1];j<grid.nEndUpdateImplicit[n][1];j++){
         for(int k=grid.nStartUpdateImplicit[n][2];k<grid.nEndUpdateImplicit[n][2];k++){
-          grid.dLocalGridOld[n][i][j][k]=grid.dLocalGridNew[n][i][j][k];
+          grid.dLocalGridOld->getElement(n,i,j,k)=grid.dLocalGridNew->getElement(n,i,j,k);
         }
       }
     }
@@ -3897,7 +3933,7 @@ void updateOldGrid(ProcTop &procTop, Grid &grid){
           j++){
           for(int k=grid.nStartGhostUpdateImplicit[n][l][2];k<grid.nEndGhostUpdateImplicit[n][l][2];
             k++){
-            grid.dLocalGridOld[n][i][j][k]=grid.dLocalGridNew[n][i][j][k];
+            grid.dLocalGridOld->getElement(n,i,j,k)=grid.dLocalGridNew->getElement(n,i,j,k);
           }
         }
       }
@@ -3938,7 +3974,7 @@ void updateNewGridWithOld(Grid &grid, ProcTop &procTop){
     for(int i=nStartX;i<nEndX;i++){
       for(int j=nStartY;j<nEndY;j++){
         for(int k=nStartZ;k<nEndZ;k++){
-          grid.dLocalGridNew[n][i][j][k]=grid.dLocalGridOld[n][i][j][k];
+          grid.dLocalGridNew->getElement(n,i,j,k)=grid.dLocalGridOld->getElement(n,i,j,k);
         }
       }
     }
@@ -3965,8 +4001,8 @@ void average3DTo1DBoundariesOld(Grid &grid){
       
       double dSum=0.0;
       double dVolume=0.0;//total volume of shell
-      double dRFactor=0.33333333333333333*(pow(grid.dLocalGridOld[grid.nR][nIInt][0][0],3.0)
-        -pow(grid.dLocalGridOld[grid.nR][nIInt-1][0][0],3.0));
+      double dRFactor=0.33333333333333333*(pow(grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0),3.0)
+        -pow(grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0),3.0));
       
       for(int j=grid.nStartGhostUpdateExplicit[n][0][1];j<grid.nEndGhostUpdateExplicit[n][0][1];j++){
         
@@ -3992,14 +4028,14 @@ void average3DTo1DBoundariesOld(Grid &grid){
             nKInt+=grid.nCenIntOffset[2];
           }
           
-          double dVolumeTemp=dRFactor*grid.dLocalGridOld[grid.nDCosThetaIJK][0][nJCen][0]
-            *grid.dLocalGridOld[grid.nDPhi][0][0][nKCen];;
+          double dVolumeTemp=dRFactor*grid.dLocalGridOld->getElement(grid.nDCosThetaIJK,0,nJCen,0)
+            *grid.dLocalGridOld->getElement(grid.nDPhi,0,0,nKCen);;
             
-          dSum+=dVolumeTemp*grid.dLocalGridOld[n][i][j][k];
+          dSum+=dVolumeTemp*grid.dLocalGridOld->getElement(n,i,j,k);
           dVolume+=dVolumeTemp;
         }
       }
-      grid.dLocalGridOld[n][i][0][0]=dSum/dVolume;
+      grid.dLocalGridOld->getElement(n,i,0,0)=dSum/dVolume;
     }
   }
 }
@@ -4022,8 +4058,8 @@ void average3DTo1DBoundariesNew(Grid &grid, int nVar){
     
     double dSum=0.0;
     double dVolume=0.0;//total volume of shell
-    double dRFactor=0.33333333333333333*(pow(grid.dLocalGridOld[grid.nR][nIInt][0][0],3.0)
-      -pow(grid.dLocalGridOld[grid.nR][nIInt-1][0][0],3.0));
+    double dRFactor=0.33333333333333333*(pow(grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0),3.0)
+      -pow(grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0),3.0));
     
     for(int j=grid.nStartGhostUpdateExplicit[nVar][0][1];j<grid.nEndGhostUpdateExplicit[nVar][0][1];
       j++){
@@ -4051,14 +4087,14 @@ void average3DTo1DBoundariesNew(Grid &grid, int nVar){
           nKInt+=grid.nCenIntOffset[2];
         }
         
-        double dVolumeTemp=dRFactor*grid.dLocalGridOld[grid.nDCosThetaIJK][0][nJCen][0]
-          *grid.dLocalGridOld[grid.nDPhi][0][0][nKCen];;
+        double dVolumeTemp=dRFactor*grid.dLocalGridOld->getElement(grid.nDCosThetaIJK,0,nJCen,0)
+          *grid.dLocalGridOld->getElement(grid.nDPhi,0,0,nKCen);;
           
-        dSum+=dVolumeTemp*grid.dLocalGridNew[nVar][i][j][k];
+        dSum+=dVolumeTemp*grid.dLocalGridNew->getElement(nVar,i,j,k);
         dVolume+=dVolumeTemp;
       }
     }
-    grid.dLocalGridNew[nVar][i][0][0]=dSum/dVolume;
+    grid.dLocalGridNew->getElement(nVar,i,0,0)=dSum/dVolume;
   }
 }
 void updateLocalBoundaryVelocitiesNewGrid_R(ProcTop &procTop,MessPass &messPass,Grid &grid){
@@ -4520,37 +4556,37 @@ void setDEDMClamp(Parameters &parameters,Time &time,Grid &grid,ProcTop &procTop)
   }
   for(int i=grid.nStartUpdateExplicit[grid.nE][0];i<grid.nEndUpdateExplicit[grid.nE][0];i++){
     nIInt=i+grid.nCenIntOffset[0];
-    if(grid.dLocalGridOld[grid.nT][i][nJ][nK]>parameters.dEDMClampTemperature
-      && grid.dLocalGridOld[grid.nT][i+1][nJ][nK]<=parameters.dEDMClampTemperature){
-      double dE_ijk_np1half=grid.dLocalGridOld[grid.nE][i][nJ][nK];
-      double dE_im1jk_np1half=grid.dLocalGridOld[grid.nE][i-1][nJ][nK];
-      double dE_ip1jk_np1half=grid.dLocalGridOld[grid.nE][i+1][nJ][nK];
+    if(grid.dLocalGridOld->getElement(grid.nT,i,nJ,nK)>parameters.dEDMClampTemperature
+      && grid.dLocalGridOld->getElement(grid.nT,i+1,nJ,nK)<=parameters.dEDMClampTemperature){
+      double dE_ijk_np1half=grid.dLocalGridOld->getElement(grid.nE,i,nJ,nK);
+      double dE_im1jk_np1half=grid.dLocalGridOld->getElement(grid.nE,i-1,nJ,nK);
+      double dE_ip1jk_np1half=grid.dLocalGridOld->getElement(grid.nE,i+1,nJ,nK);
       double dE_ip1halfjk_np1half=(dE_ip1jk_np1half+dE_ijk_np1half)*0.5;
       double dE_im1halfjk_np1half=(dE_ijk_np1half+dE_im1jk_np1half)*0.5;
       double dA1CenGrad=(dE_ip1halfjk_np1half-dE_im1halfjk_np1half)
-        /grid.dLocalGridOld[grid.nDM][i][0][0];
-      double dA1UpWindGrad=(dE_ijk_np1half-dE_im1jk_np1half)/(grid.dLocalGridOld[grid.nDM][i][0][0]
-          +grid.dLocalGridOld[grid.nDM][i-1][0][0])*2.0;
+        /grid.dLocalGridOld->getElement(grid.nDM,i,0,0);
+      double dA1UpWindGrad=(dE_ijk_np1half-dE_im1jk_np1half)/(grid.dLocalGridOld->getElement(grid.nDM,i,0,0)
+          +grid.dLocalGridOld->getElement(grid.nDM,i-1,0,0))*2.0;
       dDEDM=((1.0-parameters.dDonorCellMin)*dA1CenGrad+parameters.dDonorCellMin*dA1UpWindGrad);
-      dMr=grid.dLocalGridOld[grid.nM][nIInt][0][0];
+      dMr=grid.dLocalGridOld->getElement(grid.nM,nIInt,0,0);
     }
   }
   
   for(int i=grid.nStartUpdateImplicit[grid.nE][0];i<grid.nEndUpdateImplicit[grid.nE][0];i++){
     nIInt=i+grid.nCenIntOffset[0];
-    if(grid.dLocalGridOld[grid.nT][i][nJ][nK]>parameters.dEDMClampTemperature
-      && grid.dLocalGridOld[grid.nT][i+1][nJ][nK]<=parameters.dEDMClampTemperature){
-      double dE_ijk_np1half=grid.dLocalGridOld[grid.nE][i][nJ][nK];
-      double dE_im1jk_np1half=grid.dLocalGridOld[grid.nE][i-1][nJ][nK];
-      double dE_ip1jk_np1half=grid.dLocalGridOld[grid.nE][i+1][nJ][nK];
+    if(grid.dLocalGridOld->getElement(grid.nT,i,nJ,nK)>parameters.dEDMClampTemperature
+      && grid.dLocalGridOld->getElement(grid.nT,i+1,nJ,nK)<=parameters.dEDMClampTemperature){
+      double dE_ijk_np1half=grid.dLocalGridOld->getElement(grid.nE,i,nJ,nK);
+      double dE_im1jk_np1half=grid.dLocalGridOld->getElement(grid.nE,i-1,nJ,nK);
+      double dE_ip1jk_np1half=grid.dLocalGridOld->getElement(grid.nE,i+1,nJ,nK);
       double dE_ip1halfjk_np1half=(dE_ip1jk_np1half+dE_ijk_np1half)*0.5;
       double dE_im1halfjk_np1half=(dE_ijk_np1half+dE_im1jk_np1half)*0.5;
       double dA1CenGrad=(dE_ip1halfjk_np1half-dE_im1halfjk_np1half)
-        /grid.dLocalGridOld[grid.nDM][i][0][0];
-      double dA1UpWindGrad=(dE_ijk_np1half-dE_im1jk_np1half)/(grid.dLocalGridOld[grid.nDM][i][0][0]
-          +grid.dLocalGridOld[grid.nDM][i-1][0][0])*2.0;
+        /grid.dLocalGridOld->getElement(grid.nDM,i,0,0);
+      double dA1UpWindGrad=(dE_ijk_np1half-dE_im1jk_np1half)/(grid.dLocalGridOld->getElement(grid.nDM,i,0,0)
+          +grid.dLocalGridOld->getElement(grid.nDM,i-1,0,0))*2.0;
       dDEDM=((1.0-parameters.dDonorCellMin)*dA1CenGrad+parameters.dDonorCellMin*dA1UpWindGrad);
-      dMr=grid.dLocalGridOld[grid.nM][nIInt][0][0];
+      dMr=grid.dLocalGridOld->getElement(grid.nM,nIInt,0,0);
     }
   }
   

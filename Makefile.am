@@ -186,6 +186,8 @@ SPHERLS_SOURCES	=	\
 	src/SPHERLS/profileData.h	\
 	src/SPHERLS/fileExists.h	\
 	src/SPHERLS/fileExists.cpp	\
+	src/SPHERLS/d4grid.hpp  \
+	src/SPHERLS/d4grid.cpp \
 	src/eos.cpp	\
 	src/eos.h	\
 	src/exception2.cpp	\

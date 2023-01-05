@@ -244,38 +244,34 @@ void writeWatchZones_R_GL(Output &output, Grid &grid, Parameters &parameters, Ti
   for(unsigned int i=0;i<output.watchzoneList.size();i++){
     
     //calculate zone mass
-    double dM=grid.dLocalGridOld[grid.nDM][output.watchzoneList[i].i][0][0];
-    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][0][0]
-      *(pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i+grid.nCenIntOffset[0]][0][0],3.0)
-      -pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i-1+grid.nCenIntOffset[0]][0][0],3.0));
+    double dM=grid.dLocalGridOld->getElement(grid.nDM,output.watchzoneList[i].i,0,0);
+    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,0,0)
+      *(pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i+grid.nCenIntOffset[0],0,0),3.0)
+      -pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i-1+grid.nCenIntOffset[0],0,0),3.0));
     
     int nWidthOutputField=23;
     int nIInt=output.watchzoneList[i].i+grid.nCenIntOffset[0];
     output.ofWatchZoneFiles[i]
       <<std::setw(8)<<time.nTimeStepIndex
       <<std::setw(nWidthOutputField)<<time.dt
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt-1][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nQ0][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt-1,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nQ0,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"//V_ijp1halfk
       <<std::setw(nWidthOutputField)<<"-"//V_ijm1halfk
       <<std::setw(nWidthOutputField)<<"-"//Q1
       <<std::setw(nWidthOutputField)<<"-"//W_ijkp1half
       <<std::setw(nWidthOutputField)<<"-"//W_ijkm1half
       <<std::setw(nWidthOutputField)<<"-"//Q2
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nE][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nP][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nE,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nP,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"//T
       <<std::setw(nWidthOutputField)<<dM
       <<std::setw(nWidthOutputField)<<dMCalc
@@ -288,40 +284,36 @@ void writeWatchZones_R_TEOS(Output &output, Grid &grid, Parameters &parameters, 
   for(unsigned int i=0;i<output.watchzoneList.size();i++){
     
     //calculate zone mass
-    double dM=grid.dLocalGridOld[grid.nDM][output.watchzoneList[i].i][0][0];
-    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][0][0]
-      *(pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i+grid.nCenIntOffset[0]][0][0],3.0)
-      -pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i-1+grid.nCenIntOffset[0]][0][0],3.0));
+    double dM=grid.dLocalGridOld->getElement(grid.nDM,output.watchzoneList[i].i,0,0);
+    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,0,0)
+      *(pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i+grid.nCenIntOffset[0],0,0),3.0)
+      -pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i-1+grid.nCenIntOffset[0],0,0),3.0));
     
     int nWidthOutputField=23;
     int nIInt=output.watchzoneList[i].i+grid.nCenIntOffset[0];
     output.ofWatchZoneFiles[i]
       <<std::setw(8)<<time.nTimeStepIndex
       <<std::setw(nWidthOutputField)<<time.dt
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt-1][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nQ0][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt-1,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nQ0,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"//V_ijp1halfk
       <<std::setw(nWidthOutputField)<<"-"//V_ijm1halfk
       <<std::setw(nWidthOutputField)<<"-"//Q1
       <<std::setw(nWidthOutputField)<<"-"//W_ijkp1half
       <<std::setw(nWidthOutputField)<<"-"//W_ijkm1half
       <<std::setw(nWidthOutputField)<<"-"//Q2
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][0][0]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,0,0)
       <<std::setw(nWidthOutputField)<<"-"
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nE][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nP][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nE,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nP,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-        <<grid.dLocalGridOld[grid.nT][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+        <<grid.dLocalGridOld->getElement(grid.nT,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<dM
       <<std::setw(nWidthOutputField)<<dMCalc
       <<std::setw(nWidthOutputField)<<(dM-dMCalc)/dM
@@ -333,10 +325,10 @@ void writeWatchZones_RT_GL(Output &output, Grid &grid, Parameters &parameters, T
   for(unsigned int i=0;i<output.watchzoneList.size();i++){
     
     //calculate zone mass
-    double dM=grid.dLocalGridOld[grid.nDM][output.watchzoneList[i].i][0][0];
-    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0]
-      *(pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i+grid.nCenIntOffset[0]][0][0],3.0)
-      -pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i-1+grid.nCenIntOffset[0]][0][0],3.0));
+    double dM=grid.dLocalGridOld->getElement(grid.nDM,output.watchzoneList[i].i,0,0);
+    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0)
+      *(pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i+grid.nCenIntOffset[0],0,0),3.0)
+      -pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i-1+grid.nCenIntOffset[0],0,0),3.0));
     
     int nWidthOutputField=23;
     int nIInt=output.watchzoneList[i].i+grid.nCenIntOffset[0];
@@ -344,46 +336,40 @@ void writeWatchZones_RT_GL(Output &output, Grid &grid, Parameters &parameters, T
     output.ofWatchZoneFiles[i]
       <<std::setw(8)<<time.nTimeStepIndex
       <<std::setw(nWidthOutputField)<<time.dt
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt-1][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nQ0][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt][output.watchzoneList[i].k];
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt-1,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nQ0,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt,output.watchzoneList[i].k);
     if(nJInt-1<0){
       output.ofWatchZoneFiles[i]
         <<std::setw(nWidthOutputField)<<"-";//doesn't work when at inner edge
     }
     else{
       output.ofWatchZoneFiles[i]
-        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt-1][output.watchzoneList[i].k];
+        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt-1,output.watchzoneList[i].k);
     }
     output.ofWatchZoneFiles[i]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nQ1][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nQ1,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"//W_ijkp1half
       <<std::setw(nWidthOutputField)<<"-"//W_ijkm1half
       <<std::setw(nWidthOutputField)<<"-"//Q2
         [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k];
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k);
     if(parameters.nTypeTurbulanceMod>0){
       output.ofWatchZoneFiles[i]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nEddyVisc][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k];
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nEddyVisc,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k);
     }
     else{
       output.ofWatchZoneFiles[i]<<std::setw(nWidthOutputField)<<"-";
     }
     output.ofWatchZoneFiles[i]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nE][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nP][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nE,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nP,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"//T
       <<std::setw(nWidthOutputField)<<dM
       <<std::setw(nWidthOutputField)<<dMCalc
@@ -396,10 +382,10 @@ void writeWatchZones_RT_TEOS(Output &output, Grid &grid, Parameters &parameters,
   for(unsigned int i=0;i<output.watchzoneList.size();i++){
     
     //calculate zone mass
-    double dM=grid.dLocalGridOld[grid.nDM][output.watchzoneList[i].i][0][0];
-    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0]
-      *(pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i+grid.nCenIntOffset[0]][0][0],3.0)
-      -pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i-1+grid.nCenIntOffset[0]][0][0],3.0));
+    double dM=grid.dLocalGridOld->getElement(grid.nDM,output.watchzoneList[i].i,0,0);
+    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0)
+      *(pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i+grid.nCenIntOffset[0],0,0),3.0)
+      -pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i-1+grid.nCenIntOffset[0],0,0),3.0));
     
     int nWidthOutputField=23;
     int nIInt=output.watchzoneList[i].i+grid.nCenIntOffset[0];
@@ -408,15 +394,15 @@ void writeWatchZones_RT_TEOS(Output &output, Grid &grid, Parameters &parameters,
       <<std::setw(8)<<time.nTimeStepIndex
       <<std::setw(nWidthOutputField)<<time.dt
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nU][nIInt][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nU,nIInt,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nU][nIInt-1][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt-1][0][0]
+      <<grid.dLocalGridOld->getElement(grid.nU,nIInt-1,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt-1,0,0)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nQ0][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nQ0,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField);
     if(nJInt-1<0){
       output.ofWatchZoneFiles[i]
@@ -424,39 +410,34 @@ void writeWatchZones_RT_TEOS(Output &output, Grid &grid, Parameters &parameters,
     }
     else{
       output.ofWatchZoneFiles[i]
-        <<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt-1][output.watchzoneList[i].k];
+        <<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt-1,output.watchzoneList[i].k);
     }
     output.ofWatchZoneFiles[i]
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nQ1][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nQ1,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"//W_ijkp1half
       <<std::setw(nWidthOutputField)<<"-"//W_ijkm1half
       <<std::setw(nWidthOutputField)<<"-"//Q2
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt-1][0][0]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][output.watchzoneList[i].j]
-      [output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0];
+      <<grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0);
     if(parameters.nTypeTurbulanceMod>0){
       output.ofWatchZoneFiles[i]
-        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nEddyVisc]
-        [output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k];
+        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nEddyVisc,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k);
     }
     else{
       output.ofWatchZoneFiles[i]
         <<std::setw(nWidthOutputField)<<"-";
     }
     output.ofWatchZoneFiles[i]<<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nE][output.watchzoneList[i].i][output.watchzoneList[i].j]
-      [output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nE,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nP][output.watchzoneList[i].i][output.watchzoneList[i].j]
-      [output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nP,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nT][output.watchzoneList[i].i][output.watchzoneList[i].j]
-      [output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nT,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<dM
       <<std::setw(nWidthOutputField)<<dMCalc
       <<std::setw(nWidthOutputField)<<(dM-dMCalc)/dM
@@ -468,10 +449,10 @@ void writeWatchZones_RTP_GL(Output &output, Grid &grid, Parameters &parameters, 
   for(unsigned int i=0;i<output.watchzoneList.size();i++){
     
     //calculate zone mass
-    double dM=grid.dLocalGridOld[grid.nDM][output.watchzoneList[i].i][0][0];
-    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0]
-      *(pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i+grid.nCenIntOffset[0]][0][0],3.0)
-      -pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i-1+grid.nCenIntOffset[0]][0][0],3.0));
+    double dM=grid.dLocalGridOld->getElement(grid.nDM,output.watchzoneList[i].i,0,0);
+    double dMCalc=4.0/3.0*parameters.dPi*grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0)
+      *(pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i+grid.nCenIntOffset[0],0,0),3.0)
+      -pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i-1+grid.nCenIntOffset[0],0,0),3.0));
     
     int nWidthOutputField=23;
     int nIInt=output.watchzoneList[i].i+grid.nCenIntOffset[0];
@@ -480,55 +461,48 @@ void writeWatchZones_RTP_GL(Output &output, Grid &grid, Parameters &parameters, 
     output.ofWatchZoneFiles[i]
       <<std::setw(8)<<time.nTimeStepIndex
       <<std::setw(nWidthOutputField)<<time.dt
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU][nIInt-1][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nQ0][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt][output.watchzoneList[i].k];
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU,nIInt-1,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nQ0,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt,output.watchzoneList[i].k);
     if(nJInt-1==-1){
       output.ofWatchZoneFiles[i]
         <<std::setw(nWidthOutputField)<<"-";//not defined when on edge
     }
     else{
       output.ofWatchZoneFiles[i]
-        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt-1][output.watchzoneList[i].k];
+        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt-1,output.watchzoneList[i].k);
     }
     output.ofWatchZoneFiles[i]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nQ1][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nW][output.watchzoneList[i].i][output.watchzoneList[i].j][nKInt];
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nQ1,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nW,output.watchzoneList[i].i,output.watchzoneList[i].j,nKInt);
     if(nKInt-1==-1){
       output.ofWatchZoneFiles[i]
         <<std::setw(nWidthOutputField)<<"-";//not defined when on edge
     }
     else{
       output.ofWatchZoneFiles[i]
-        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nW][output.watchzoneList[i].i][output.watchzoneList[i].j][nKInt-1];
+        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nW,output.watchzoneList[i].i,output.watchzoneList[i].j,nKInt-1);
     }
     output.ofWatchZoneFiles[i]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nQ2][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt-1][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k];
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nQ2,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k);
     if(parameters.nTypeTurbulanceMod>0){
       output.ofWatchZoneFiles[i]
-        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nEddyVisc]
-        [output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k];
+        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nEddyVisc,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k);
     }
     else{
       output.ofWatchZoneFiles[i]
         <<std::setw(nWidthOutputField)<<"-";
     }
     output.ofWatchZoneFiles[i]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nE][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nP][output.watchzoneList[i].i][output.watchzoneList[i].j]
-        [output.watchzoneList[i].k]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nE,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nP,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<"-"//T
       <<std::setw(nWidthOutputField)<<dM
       <<std::setw(nWidthOutputField)<<dMCalc
@@ -541,12 +515,11 @@ void writeWatchZones_RTP_TEOS(Output &output, Grid &grid, Parameters &parameters
   for(unsigned int i=0;i<output.watchzoneList.size();i++){
     
     //calculate zone mass
-    double dM=grid.dLocalGridOld[grid.nDM][output.watchzoneList[i].i][0][0];
+    double dM=grid.dLocalGridOld->getElement(grid.nDM,output.watchzoneList[i].i,0,0);
     double dMCalc=4.0/3.0*parameters.dPi
-      *grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0]
-      *(pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i+grid.nCenIntOffset[0]][0][0],3.0)
-      -pow(grid.dLocalGridOld[grid.nR][output.watchzoneList[i].i-1
-      +grid.nCenIntOffset[0]][0][0],3.0));
+      *grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0)
+      *(pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i+grid.nCenIntOffset[0],0,0),3.0)
+      -pow(grid.dLocalGridOld->getElement(grid.nR,output.watchzoneList[i].i-1  +grid.nCenIntOffset[0],0,0),3.0));
     
     int nWidthOutputField=23;
     int nIInt=output.watchzoneList[i].i+grid.nCenIntOffset[0];
@@ -556,60 +529,58 @@ void writeWatchZones_RTP_TEOS(Output &output, Grid &grid, Parameters &parameters
       <<std::setw(8)<<time.nTimeStepIndex
       <<std::setw(nWidthOutputField)<<time.dt
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nU][nIInt][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nU,nIInt,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nU][nIInt-1][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nU0][nIInt-1][0][0]
+      <<grid.dLocalGridOld->getElement(grid.nU,nIInt-1,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nU0,nIInt-1,0,0)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nQ0][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nQ0,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField);
     if(nJInt-1==-1){
       output.ofWatchZoneFiles[i]<<"-";//not defined when on edge
     }
     else{
       output.ofWatchZoneFiles[i]
-        <<grid.dLocalGridOld[grid.nV][output.watchzoneList[i].i][nJInt-1][output.watchzoneList[i].k];
+        <<grid.dLocalGridOld->getElement(grid.nV,output.watchzoneList[i].i,nJInt-1,output.watchzoneList[i].k);
     }
     output.ofWatchZoneFiles[i]
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nQ1][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nQ1,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nW][output.watchzoneList[i].i][output.watchzoneList[i].j][nKInt]
+      <<grid.dLocalGridOld->getElement(grid.nW,output.watchzoneList[i].i,output.watchzoneList[i].j,nKInt)
       <<std::setw(nWidthOutputField);
     if(nKInt-1==-1){
       output.ofWatchZoneFiles[i]<<"-";//not defined when on edge
     }
     else{
       output.ofWatchZoneFiles[i]
-        <<grid.dLocalGridOld[grid.nW][output.watchzoneList[i].i][output.watchzoneList[i].j][nKInt-1];
+        <<grid.dLocalGridOld->getElement(grid.nW,output.watchzoneList[i].i,output.watchzoneList[i].j,nKInt-1);
     }
     output.ofWatchZoneFiles[i]
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nQ2][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt][0][0]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nR][nIInt-1][0][0]
+      <<grid.dLocalGridOld->getElement(grid.nQ2,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt,0,0)
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nR,nIInt-1,0,0)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nD][output.watchzoneList[i].i][output.watchzoneList[i].j]
-      [output.watchzoneList[i].k];
+      <<grid.dLocalGridOld->getElement(grid.nD,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k);
     if(parameters.nTypeTurbulanceMod>0){
       output.ofWatchZoneFiles[i]
-        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nEddyVisc]
-        [output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k];
+        <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nEddyVisc,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k);
     }
     else{
       output.ofWatchZoneFiles[i]<<std::setw(nWidthOutputField)<<"-";
     }
     output.ofWatchZoneFiles[i]
-      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld[grid.nDenAve][output.watchzoneList[i].i][0][0]
+      <<std::setw(nWidthOutputField)<<grid.dLocalGridOld->getElement(grid.nDenAve,output.watchzoneList[i].i,0,0)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nE][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nE,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nP][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nP,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)
-      <<grid.dLocalGridOld[grid.nT][output.watchzoneList[i].i][output.watchzoneList[i].j][output.watchzoneList[i].k]
+      <<grid.dLocalGridOld->getElement(grid.nT,output.watchzoneList[i].i,output.watchzoneList[i].j,output.watchzoneList[i].k)
       <<std::setw(nWidthOutputField)<<dM
       <<std::setw(nWidthOutputField)<<dMCalc
       <<std::setw(nWidthOutputField)<<(dM-dMCalc)/dM

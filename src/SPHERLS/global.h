@@ -20,6 +20,8 @@
 #include "profileData.h"
 #include "procTop.h"
 #include "time.h"
+#include "d4grid.hpp"
+#include <algorithm>
 
 //Debugging flags
 #define SIGNEGDEN 0/**<
@@ -71,7 +73,7 @@
   term in the energy equation.
   */
 
-//classes
+/*'/*classes*/
 class MessPass{
   public:
     MPI::Datatype *typeSendNewGrid;/**<
@@ -301,7 +303,8 @@ class Grid{
       not include \ref Grid::nNumGhostCells. The values of this variable are independent of 
       processor \ref ProcTop::nRank.
       */
-    double ****dLocalGridNew; /**<
+    //double ****dLocalGridNew; /**<
+    d4grid* dLocalGridNew; /**<
       Updated local grid values.
       An array of size \ref Grid::nNumVars+\ref Grid::nNumIntVars by \ref Grid::nLocalGridDims[0]
       +2*\ref Grid::nNumGhostCells by \ref Grid::nLocalGridDims[1]+2*\ref Grid::nNumGhostCells by
@@ -312,7 +315,8 @@ class Grid{
       calculations. This is a processor dependent variable and contains only the local grid for the
       current processor plus ghost cells.
       */
-    double ****dLocalGridOld; /**<
+    //double ****dLocalGridOld; /**<
+    d4grid* dLocalGridOld;/**<
       Grid values from previous time step.
       An array the same size as \ref Grid::dLocalGridNew but instead of containing the current grid 
       state, it contains the last complete grid state. This is a processor dependent variable and

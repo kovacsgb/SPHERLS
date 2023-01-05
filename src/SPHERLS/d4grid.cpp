@@ -11,6 +11,13 @@ double& d4grid::getElement(int i, int j, int k, int l)
     return this->pGridobj[this->calcindex(i,j,k,l)];
 }
 
+double* d4grid::getElement(int i, int j, int k)
+{
+    double* output = &pGridobj[calcindex(i,j,k,0)];
+    return output;
+}
+
+
 d4grid* d4grid::buildIt(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum)
 {
     d4grid* d4NewGrid = new d4grid();
@@ -69,5 +76,16 @@ double& d4gridRadial::getElement(int i, int j, int k, int l)
 d4gridRadial::~d4gridRadial()
 {
     delete this->ghostGrid;
-    d4grid::~d4grid();
+}
+
+double* d4gridRadial::getElement(int i, int j, int k)
+{
+    if( j >= ndim2)
+    {
+        return this->ghostGrid->getElement(i, j-ndim2, k);
+    }
+    else
+    {
+        return d4grid::getElement(i,j,k);
+    }
 }
