@@ -1,7 +1,8 @@
 #ifndef D4GRID
 #define D4GRID
 
-
+#include <vector>
+#include "exception2.h"
 class d4grid {
 
 protected:
@@ -26,6 +27,7 @@ public:
     virtual double* getElement(int i, int j, int k);
     static d4grid* buildIt(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum);
     static d4grid* buildRadial(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum, int nSizeX2, int nSizeY2, int nSizeZ2);
+    void loadline(std::vector<double> line, int i, int j, int k);
 
 };
 

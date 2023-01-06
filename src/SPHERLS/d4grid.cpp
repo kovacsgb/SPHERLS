@@ -1,5 +1,5 @@
 #include "d4grid.hpp"
-
+#include<string>
 
 inline int d4grid::calcindex(int i, int j, int k, int l)
 {
@@ -8,6 +8,9 @@ inline int d4grid::calcindex(int i, int j, int k, int l)
 
 double& d4grid::getElement(int i, int j, int k, int l)
 {
+    /*if(l>=ndim4) throw(exception2("Given l is greaten than dimension in Z direction:"+std::to_string(l)+">="+std::to_string(ndim4)+"\n i,j,k:"+
+    std::to_string(i)+" "+std::to_string(j)+" "+std::to_string(k)+"\n"+"dims:"+
+    std::to_string(ndim1)+" "+std::to_string(ndim2)+" "+std::to_string(ndim3)+"\n"));*/
     return this->pGridobj[this->calcindex(i,j,k,l)];
 }
 
@@ -15,6 +18,14 @@ double* d4grid::getElement(int i, int j, int k)
 {
     double* output = &pGridobj[calcindex(i,j,k,0)];
     return output;
+}
+
+void d4grid::loadline(std::vector<double> line,int i, int j, int k)
+{
+    for(int l=0; l< line.size();l++)
+    {
+        this->getElement(i,j,k,l) = line[l];
+    }
 }
 
 

@@ -550,9 +550,17 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
   if(procTop.nRank==0){// 1D region doesn't need ghost cells in theta and phi directions
     //grid.dLocalGridOld=new double***[nVarNumForD4grid];
     //grid.dLocalGridNew=new double***[nVarNumForD4grid];
-    int nRadialElementNumForD4Grid = grid.nNum1DZones + 1 + grid.nNumGhostCells; //+1 because of the interface(?)
-    int nThetaNumForD4Grid= 2; //one element and one interface
-    int nPhiNumForD4Grid = 2; //one element and one interface
+    auto getmax=[grid,nVarNumForD4grid](int l){
+      int nMaxDim=1;
+      for( int n= 0; n< nVarNumForD4grid;n++)
+      {
+        if (nMaxDim<grid.nLocalGridDims[0][n][l]) nMaxDim = grid.nLocalGridDims[0][n][l];
+      }
+      return nMaxDim;
+    };
+    int nRadialElementNumForD4Grid = getmax(0) + grid.nNumGhostCells; //+1 because of the interface(?)
+    int nThetaNumForD4Grid= getmax(1)+3; //one element and one interface
+    int nPhiNumForD4Grid = getmax(2)+3; //one element and one interface
     //Parameters of the adjadent grid container:
     int nGhostDim1 = grid.nNumGhostCells;
     int nGhostDim2 = grid.nGlobalGridDims[1]+1;
@@ -1668,8 +1676,11 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
         //read in inner 1D region
         for(int i=0;i<grid.nLocalGridDims[procTop.nRank][n][0]+grid.nNumGhostCells;i++){
           for(int j=0;j<grid.nLocalGridDims[procTop.nRank][n][1];j++){
-            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
+            double* buffer = new double[grid.nLocalGridDims[procTop.nRank][n][2]];
+            ifIn.read(reinterpret_cast<char*>(buffer)
               ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
+            grid.dLocalGridOld->loadline(std::vector<double>(buffer,buffer+static_cast<size_t>(grid.nLocalGridDims[procTop.nRank][n][2])),n,i,j);
+            delete buffer;
           }
         }
         
@@ -1701,8 +1712,11 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
             
             //skip inner z-ghost cells
             ifIn.seekg(nSkipSize[2]*sizeof(double),std::ios_base::cur);
-            
-            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j)),(nGlobalSize[2])*sizeof(double));
+            double* buffer = new double[nGlobalSize[2]];
+            //ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j)),(nGlobalSize[2])*sizeof(double));
+            ifIn.read(reinterpret_cast<char*>(buffer),(nGlobalSize[2])*sizeof(double));
+            grid.dLocalGridOld->loadline(std::vector<double>(buffer,buffer+static_cast<size_t>(nGlobalSize[2])),n,i,j);
+            delete buffer;
             //may need to copy these around if the variable is not defined in y and or z directions
             //grid will be the size of the y and z processor dimensions
             
@@ -1878,10 +1892,15 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
           +nGhostCellsX*2*grid.nNumGhostCells;i++){
           for(int j=0;j<grid.nLocalGridDims[procTop.nRank][n][1]
             +nGhostCellsY*2*grid.nNumGhostCells;j++){
-            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
-              ,(grid.nLocalGridDims[procTop.nRank][n][2]+nGhostCellsZ*2*grid.nNumGhostCells)
-              *sizeof(double));
-            
+              const size_t linesize=grid.nLocalGridDims[procTop.nRank][n][2]+nGhostCellsZ*2*grid.nNumGhostCells;
+              double* buffer =new double[linesize];
+            //ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
+            //  ,(grid.nLocalGridDims[procTop.nRank][n][2]+nGhostCellsZ*2*grid.nNumGhostCells)
+            //  *sizeof(double));
+              ifIn.read(reinterpret_cast<char*>(buffer),linesize*sizeof(double));
+              grid.dLocalGridOld->loadline(std::vector<double>(buffer,buffer+linesize),n,i,j);
+              delete buffer;
+
             //skip some z for other processors
             ifIn.seekg(nZSpacing,std::ios_base::cur);
           }
@@ -1899,10 +1918,15 @@ void modelRead(std::string sFileName,ProcTop &procTop, Grid &grid, Time &time
           +nGhostCellsX*2*grid.nNumGhostCells;i++){
           for(int j=0;j<grid.nLocalGridDims[procTop.nRank][n][1]
             +nGhostCellsY*2*grid.nNumGhostCells;j++){
-            ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
-              ,(grid.nLocalGridDims[procTop.nRank][n][2]+nGhostCellsZ*2*grid.nNumGhostCells)
-              *sizeof(double));
-              
+            const size_t linesize = grid.nLocalGridDims[procTop.nRank][n][2]
+            +nGhostCellsZ*2*grid.nNumGhostCells;
+            double* buffer = new double[linesize];
+            //ifIn.read((char*)(grid.dLocalGridOld->getElement(n,i,j))
+            //  ,(grid.nLocalGridDims[procTop.nRank][n][2]+nGhostCellsZ*2*grid.nNumGhostCells)
+            //  *sizeof(double));
+            ifIn.read(reinterpret_cast<char*>(buffer),linesize*sizeof(double));
+            grid.dLocalGridOld->loadline(std::vector<double>(buffer,buffer+linesize),n,i,j);
+            delete buffer;  
             //skip some z for other processors
             ifIn.seekg(nZSpacing,std::ios_base::cur);
           }
