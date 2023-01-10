@@ -566,14 +566,60 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
     int nGhostDim2 = grid.nGlobalGridDims[1]+1;
     int nGhostDim3 = grid.nGlobalGridDims[2]+1;
 
-    grid.dLocalGridOld = d4grid::buildRadial(nVarNumForD4grid,nRadialElementNumForD4Grid,
-      nThetaNumForD4Grid,nPhiNumForD4Grid,nGhostDim1,nGhostDim2,nGhostDim3);
-    grid.dLocalGridNew = d4grid::buildRadial(nVarNumForD4grid,nRadialElementNumForD4Grid,
-      nThetaNumForD4Grid,nPhiNumForD4Grid,nGhostDim1,nGhostDim2,nGhostDim3);
+    //grid.dLocalGridOld = d4grid::buildRadial(nVarNumForD4grid,nRadialElementNumForD4Grid,
+    //  nThetaNumForD4Grid,nPhiNumForD4Grid,nGhostDim1,nGhostDim2,nGhostDim3);
+    //grid.dLocalGridNew = d4grid::buildRadial(nVarNumForD4grid,nRadialElementNumForD4Grid,
+    //  nThetaNumForD4Grid,nPhiNumForD4Grid,nGhostDim1,nGhostDim2,nGhostDim3);
     /* 
     This method creates a lot of empty space which is still bad, a next improvement would be to generate separate grids for each variable, using them in a vector,
      but hopefully grid interface could be at least comform LS principle.
     */
+    //Let's figure out the expnding dimensions on the neighboing 3D region
+    std::vector<int> nSizeX(nVarNumForD4grid);
+    std::vector<int> nSizeY(nVarNumForD4grid);
+    std::vector<int> nSizeZ(nVarNumForD4grid);
+    int** nGridDims = new int*[nVarNumForD4grid];
+
+    for(int n=0;n<nVarNumForD4grid;n++)
+    {
+      nGridDims[n]=new int[3];
+
+      int nGhostCellsX= grid.nVariables[n][0]==-1 ? 0 :1;
+
+      nGridDims[n][0] = grid.nLocalGridDims[procTop.nRank][n][0]+nGhostCellsX*grid.nNumGhostCells;
+      nGridDims[n][1] = grid.nLocalGridDims[procTop.nRank][n][1];
+      nGridDims[n][2]   = grid.nLocalGridDims[procTop.nRank][n][2];
+      int nStartX=0;
+      int nEndX=0;
+      nSizeY[n]=1;
+      nSizeZ[n]=1;
+      if(grid.nVariables[n][0]!=-1){
+        nStartX=grid.nLocalGridDims[procTop.nRank][n][0]+grid.nNumGhostCells;
+        nEndX=grid.nLocalGridDims[procTop.nRank][n][0]+2*grid.nNumGhostCells;
+      }
+      if(grid.nVariables[n][1]!=-1){
+        nSizeY[n]=grid.nGlobalGridDims[1]+grid.nVariables[n][1];
+      }
+      else if(grid.nVariables[n][1]==-1){
+        nSizeY[n]=procTop.nProcDims[1];//if not defined in that y-direction
+                            //allow space for each neighboring processor to send data
+      }
+      if(grid.nVariables[n][2]!=-1){
+        nSizeZ[n]=grid.nGlobalGridDims[2]+grid.nVariables[n][2];
+      }
+      else if(grid.nVariables[n][2]==-1){
+        nSizeZ[n]=procTop.nProcDims[2];//if not defined in that z-direction
+                            //allow space for each neighboring processor to send data
+      }
+      nSizeX[n]=nEndX-nStartX;
+    }
+
+    grid.dLocalGridOld = d4grid::buildRadial(nVarNumForD4grid,nGridDims,nSizeX,nSizeY,nSizeZ);
+    grid.dLocalGridNew = d4grid::buildRadial(nVarNumForD4grid,nGridDims,nSizeX,nSizeY,nSizeZ);
+
+    for(int n=0;n<nVarNumForD4grid;n++)
+      delete nGridDims[n];
+    delete nGridDims;
 
     /*for(int n=0;n<nVarNumForD4grid;n++){
       
@@ -634,7 +680,7 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
   }
   else{// 3D region
     /* This part is easier, much less empty spaces. */
-    auto getmax=[grid,procTop,nVarNumForD4grid](int l){
+    /*auto getmax=[grid,procTop,nVarNumForD4grid](int l){
       int nMaxDim=1;
       for( int n= 0; n< nVarNumForD4grid;n++)
       {
@@ -645,10 +691,54 @@ void setupLocalGrid(ProcTop &procTop, Grid &grid){
     int nSizeX=getmax(0)+2*grid.nNumGhostCells;
     int nSizeY = getmax(1) + 2*grid.nNumGhostCells;
     int nSizeZ = getmax(2) + 2*grid.nNumGhostCells;
+      */
+    //grid.dLocalGridOld = d4grid::buildIt(nVarNumForD4grid,nSizeX,nSizeY,nSizeZ);
+    //grid.dLocalGridNew = d4grid::buildIt(nVarNumForD4grid,nSizeX,nSizeY,nSizeZ);
 
-    grid.dLocalGridOld = d4grid::buildIt(nVarNumForD4grid,nSizeX,nSizeY,nSizeZ);
-    grid.dLocalGridNew = d4grid::buildIt(nVarNumForD4grid,nSizeX,nSizeY,nSizeZ);
+    int** nGridDims = new int*[nVarNumForD4grid];
 
+    for(int n=0;n<nVarNumForD4grid;n++)
+    {
+      nGridDims[n] = new int[3];
+      int nSizeX=1; //NumRadialElement in d4Grid
+      int nSizeY=1; //NumTheta in d4Grid
+      int nSizeZ=1; //NumPhi in D4Grid
+
+      if(grid.nVariables[n][0]!=-1){
+        nSizeX=grid.nLocalGridDims[procTop.nRank][n][0]+2*grid.nNumGhostCells;
+      }
+      if(grid.nVariables[n][1]!=-1){
+        if(grid.nNumDims>1){//only need ghost cells if greater than 1D
+          nSizeY=grid.nLocalGridDims[procTop.nRank][n][1]+2*grid.nNumGhostCells;
+        }
+        else{
+          nSizeY=grid.nLocalGridDims[procTop.nRank][n][1];
+        }
+      }
+      if(grid.nVariables[n][2]!=-1){
+        if(grid.nNumDims>2){
+          nSizeZ=grid.nLocalGridDims[procTop.nRank][n][2]+2*grid.nNumGhostCells;
+        }
+        else{
+          nSizeZ=grid.nLocalGridDims[procTop.nRank][n][2];
+        }
+      }
+      nGridDims[n][0]=nSizeX;
+      nGridDims[n][1]=nSizeY;
+      nGridDims[n][2]=nSizeZ;
+
+    }
+
+
+
+    grid.dLocalGridOld = d4grid::buildNormal(nVarNumForD4grid,nGridDims);
+    grid.dLocalGridNew = d4grid::buildNormal(nVarNumForD4grid,nGridDims);
+
+    for(int n=0;n<nVarNumForD4grid;n++)
+    {
+      delete nGridDims[n];
+    }
+    delete nGridDims;
 
     /*grid.dLocalGridOld=new double***[nVarNumForD4grid];
     grid.dLocalGridNew=new double***[nVarNumForD4grid];
@@ -941,8 +1031,12 @@ void modelWrite_GL(std::string sFileName,ProcTop &procTop, Grid &grid, Time &tim
           //have to write out the multidimensional array one row at a time since
           // there is no garantee that from one row to another the memory is
           // contiguous
-          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
-            ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
+          double* buffer=grid.dLocalGridOld->writeline(n,i,j);
+          //ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
+          //  ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
+          ofOut.write(reinterpret_cast<char*>(buffer),
+          (grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
+          delete buffer;
         }
       }
       
@@ -962,7 +1056,10 @@ void modelWrite_GL(std::string sFileName,ProcTop &procTop, Grid &grid, Time &tim
         for(int j=0;j<nSizeY;j++){
           //have to write out the multidimensional array one row at a time since there is no 
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j)),nSizeZ*sizeof(double));
+          double* buffer = grid.dLocalGridOld->writeline(n,i,j);
+          //ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j)),nSizeZ*sizeof(double));
+          ofOut.write(reinterpret_cast<char*>(buffer),nSizeZ*sizeof(double));
+          delete buffer;
         }
       }
     }
@@ -1010,9 +1107,14 @@ void modelWrite_GL(std::string sFileName,ProcTop &procTop, Grid &grid, Time &tim
           +nGhostCellsY*2*grid.nNumGhostCells;j++){
           //have to write out the multidimensional array one row at a time since there is no
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
-            ,(grid.nLocalGridDims[procTop.nRank][n][2]
+          double* buffer = grid.dLocalGridOld->writeline(n,i,j);
+          //ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
+          //  ,(grid.nLocalGridDims[procTop.nRank][n][2]
+          //  +nGhostCellsZ*2*grid.nNumGhostCells)*sizeof(double));
+          ofOut.write(reinterpret_cast<char*>(buffer),
+            (grid.nLocalGridDims[procTop.nRank][n][2]
             +nGhostCellsZ*2*grid.nNumGhostCells)*sizeof(double));
+          delete buffer;
         }
       }
     }
@@ -1122,8 +1224,13 @@ void modelWrite_TEOS(std::string sFileName,ProcTop &procTop, Grid &grid, Time &t
           //have to write out the multidimensional array one row at a time since
           // there is no garantee that from one row to another the memory is
           // contiguous
-          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
-            ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
+          double* buffer=grid.dLocalGridOld->writeline(n,i,j);
+          //ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
+          //  ,(grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
+          ofOut.write(reinterpret_cast<char*>(buffer),
+          (grid.nLocalGridDims[procTop.nRank][n][2])*sizeof(double));
+          delete buffer;
+        
         }
       }
       
@@ -1143,7 +1250,10 @@ void modelWrite_TEOS(std::string sFileName,ProcTop &procTop, Grid &grid, Time &t
         for(int j=0;j<nSizeY;j++){
           //have to write out the multidimensional array one row at a time since there is no 
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j)),nSizeZ*sizeof(double));
+          double* buffer=grid.dLocalGridOld->writeline(n,i,j);
+          //ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j)),nSizeZ*sizeof(double));
+          ofOut.write(reinterpret_cast<char*>(buffer),nSizeZ*sizeof(double));
+          delete buffer;
         }
       }
     }
@@ -1191,9 +1301,13 @@ void modelWrite_TEOS(std::string sFileName,ProcTop &procTop, Grid &grid, Time &t
           +nGhostCellsY*2*grid.nNumGhostCells;j++){
           //have to write out the multidimensional array one row at a time since there is no
           //garantee that from one row to another the memory is contiguous
-          ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
-            ,(grid.nLocalGridDims[procTop.nRank][n][2]
+          double* buffer=grid.dLocalGridOld->writeline(n,i,j);
+          //ofOut.write((char*)(grid.dLocalGridOld->getElement(n,i,j))
+          //  ,(grid.nLocalGridDims[procTop.nRank][n][2]
+          //  +nGhostCellsZ*2*grid.nNumGhostCells)*sizeof(double));
+          ofOut.write(reinterpret_cast<char*>(buffer),(grid.nLocalGridDims[procTop.nRank][n][2]
             +nGhostCellsZ*2*grid.nNumGhostCells)*sizeof(double));
+          delete buffer;
         }
       }
     }

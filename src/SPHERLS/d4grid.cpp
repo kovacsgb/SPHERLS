@@ -1,23 +1,107 @@
 #include "d4grid.hpp"
 #include<string>
+#include<iostream>
 
-inline int d4grid::calcindex(int i, int j, int k, int l)
+
+int NormalGrid::getDimZ( [[maybe_unused]] int i)
 {
-    return i*nBlockSize + j*nSurfaceSize + k* nRowSize + l;
+    return ndimZ;
 }
 
-double& d4grid::getElement(int i, int j, int k, int l)
+/*********RadialGrid and SurfaceElement*********/
+
+
+int SurfElement::getDimZ()
 {
-    /*if(l>=ndim4) throw(exception2("Given l is greaten than dimension in Z direction:"+std::to_string(l)+">="+std::to_string(ndim4)+"\n i,j,k:"+
-    std::to_string(i)+" "+std::to_string(j)+" "+std::to_string(k)+"\n"+"dims:"+
-    std::to_string(ndim1)+" "+std::to_string(ndim2)+" "+std::to_string(ndim3)+"\n"));*/
-    return this->pGridobj[this->calcindex(i,j,k,l)];
+    return ndimZ;
 }
 
-double* d4grid::getElement(int i, int j, int k)
+int RadialGrid::getDimZ(int i)
 {
-    double* output = &pGridobj[calcindex(i,j,k,0)];
-    return output;
+    return dGrid[i].getDimZ();
+}
+
+
+
+d3Grid* RadialGrid::buildIt(int nX, int nY, int nZ, int nGhostX, int nGhostY, int nGhostZ)
+{
+    RadialGrid* newGrid = new RadialGrid;
+
+    newGrid->dGrid = std::vector<SurfElement>(nX+nGhostX);
+    std::fill(newGrid->dGrid.begin(),std::next(newGrid->dGrid.begin(),nX),
+             SurfElement(nY,nZ));
+    if(nGhostX != 0){
+        std::fill(std::next(newGrid->dGrid.begin(),nX),newGrid->dGrid.end(),
+                SurfElement(nGhostY,nGhostZ));    
+    }
+    return newGrid;
+}
+
+
+/*********************** d4grid *********************/
+
+d4grid::~d4grid()
+{
+    for (auto &i : this->pGridObj)
+    {
+        delete i;
+    }
+}
+
+d4grid& d4grid::operator=(const d4grid& other)
+/*rule of three for the time being */
+{
+    if (this==&other)
+    {
+        return *this;
+    }
+    this->pGridObj = other.pGridObj;
+    this->nDimGridObj = other.nDimGridObj;
+    this->ndimensions = other.ndimensions;
+    return *this;
+}
+
+
+d4grid* d4grid::buildNormal(int nVarNum, int** nDimensions)
+{
+    d4grid* newObj = new d4grid;
+
+    newObj->nDimGridObj=nVarNum;
+
+    newObj->ndimensions=std::vector<int>(nVarNum*3);
+
+    std::generate(newObj->ndimensions.begin(),std::end(newObj->ndimensions),
+    [i=0, &nDimensions]() mutable { int j=i/3; int k=i%3;i++; return nDimensions[j][k];});
+
+    newObj->pGridObj = std::vector<d3Grid*>(nVarNum);
+    std::generate(newObj->pGridObj.begin(),newObj->pGridObj.end(),
+    [i=0, &nDimensions]() mutable {int* nDims=nDimensions[i++];
+      return new NormalGrid(nDims[0],nDims[1],nDims[2]);} );
+
+    return newObj;
+
+}
+
+
+d4grid* d4grid::buildRadial(int nVarNum, int** nDimensions, IntVec nSizeX, IntVec nSizeY, IntVec nSizeZ)
+{
+    d4grid* newObj = new d4grid;
+
+    newObj -> nDimGridObj= nVarNum;
+    
+    newObj->ndimensions=std::vector<int>(nVarNum*3);
+
+    std::generate(newObj->ndimensions.begin(),std::end(newObj->ndimensions),
+    [i=0, &nDimensions]() mutable { int j=i/3; int k=i%3;i++; return nDimensions[j][k];});
+
+    newObj->pGridObj = std::vector<d3Grid*>(nVarNum);
+    std::generate(newObj->pGridObj.begin(),newObj->pGridObj.end(),
+    [i=0, &nDimensions,&nSizeX, &nSizeY, &nSizeZ]() mutable {
+        int* nDims=nDimensions[i++];
+        return RadialGrid::buildIt(nDims[0],nDims[1],nDims[2],
+            nSizeX[i-1],nSizeY[i-1],nSizeZ[i-1]);
+        });
+    return newObj;
 }
 
 void d4grid::loadline(std::vector<double> line,int i, int j, int k)
@@ -27,76 +111,15 @@ void d4grid::loadline(std::vector<double> line,int i, int j, int k)
         this->getElement(i,j,k,l) = line[l];
     }
 }
-
-
-d4grid* d4grid::buildIt(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum)
+double* d4grid::writeline(int i, int j, int k)
 {
-    d4grid* d4NewGrid = new d4grid();
-
-    d4NewGrid->ndim1=nVarNum;
-    d4NewGrid->ndim2=nRadialElementNum;
-    d4NewGrid->ndim3=nThetaNum;
-    d4NewGrid->ndim4=nPhiNum;
-    d4NewGrid->nBlockSize=nRadialElementNum*nThetaNum*nPhiNum;
-    d4NewGrid->nSurfaceSize=nThetaNum*nPhiNum;
-    d4NewGrid->nRowSize=nPhiNum;
-    d4NewGrid->pGridobj= new double[nVarNum*nRadialElementNum*nThetaNum*nPhiNum];
-
-    return d4NewGrid;
-}
-
-d4grid::~d4grid()
-{
-    delete this->pGridobj;
-}
-
-d4grid* d4grid::buildRadial(int nVarNum, int nRadialElementNum, int nThetaNum, int nPhiNum, int nSizeX2, int nSizeY2, int nSizeZ2)
-{
-    d4grid* d4NewGrid = new d4gridRadial();
-    d4NewGrid->ndim1=nVarNum;
-    d4NewGrid->ndim2=nRadialElementNum;
-    d4NewGrid->ndim3=nThetaNum;
-    d4NewGrid->ndim4=nPhiNum;
-    d4NewGrid->nBlockSize=nRadialElementNum*nThetaNum*nPhiNum;
-    d4NewGrid->nSurfaceSize=nThetaNum*nPhiNum;
-    d4NewGrid->nRowSize=nPhiNum;
-    d4NewGrid->pGridobj= new double[nVarNum*nRadialElementNum*nThetaNum*nPhiNum];
-    static_cast<d4gridRadial*>(d4NewGrid)->buildGhost(nSizeX2,nSizeY2,nSizeZ2);
-
-    return d4NewGrid;
-
-}
-
-void d4gridRadial::buildGhost(int nSizeX2, int nSizeY2, int nSizeZ2)
-{
-    this->ghostGrid=d4grid::buildIt(this->ndim1,nSizeX2,nSizeY2,nSizeZ2);
-}
-
-double& d4gridRadial::getElement(int i, int j, int k, int l)
-{
-    if( j >= ndim2)
-    {
-        return this->ghostGrid->getElement(i, j-ndim2, k ,l);
-    }
-    else
-    {
-        return d4grid::getElement(i,j,k,l);
-    }
-}
-
-d4gridRadial::~d4gridRadial()
-{
-    delete this->ghostGrid;
-}
-
-double* d4gridRadial::getElement(int i, int j, int k)
-{
-    if( j >= ndim2)
-    {
-        return this->ghostGrid->getElement(i, j-ndim2, k);
-    }
-    else
-    {
-        return d4grid::getElement(i,j,k);
-    }
+    d3Grid* pVarElement = this->pGridObj[i];
+    int ndimZ=pVarElement->getDimZ(j);
+    double* line = new double[ndimZ];
+    
+    for (int l=0; l<ndimZ;l++)
+        {
+            line[l] = pVarElement->getElement(j,k,l);
+        }
+    return line;
 }
